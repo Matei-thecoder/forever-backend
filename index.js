@@ -30,6 +30,8 @@ async function loadProducts() {
 await loadProducts();
 
 setInterval(loadProducts, 10 * 60 * 1000);
+
+
 async function aloeVeraBot(userMessage){
     const products = productsCache;
 
@@ -55,7 +57,44 @@ async function aloeVeraBot(userMessage){
     return response.choices[0].message.content;
 }
 
+async function createConversation(userid, question)
+{
+    const {data, error} = await supabase
+    .from('conversations')
+    .insert({
+        user_id:userid,
+        title: question
+    })
+    .select();
+    if(error) 
+    {
+        console.log(error);
+        return error;
+    }
+    console.log(data);
+    return data[0].id;
 
+}
+
+async function createMessage(conversation_id, role, content)
+{
+    const {data, error} = await supabase
+    .from('messages')
+    .insert({
+        conversation_id,
+        role,
+        content
+    })
+    .select();
+    if(error) 
+    {
+        console.log(error);
+        return error;
+    }
+    console.log(data);
+    return data[0].id;
+
+}
 
 app.post('/signup', async (req, res) => {
     const { email, password, username } = req.body;
@@ -144,6 +183,127 @@ app.post('/chat/guestmode',async (req,res)=>{
         console.error(error);
         res.status(500).json({ error: 'An error occurred while processing your request.' });
     });
+})
+
+app.get('/chat/usermode/getAllConversations', async (req,res)=>{
+    const {userid} = req.body;
+
+    const {data, error} = await supabase
+    .from('conversations')
+    .select()
+    .eq('user_id', userid);
+
+    if (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'An error occurred while fetching conversations.' });
+    }
+
+    res.status(200).json({ conversations: data });
+})
+
+app.post('/chat/usermode/startConvo', async (req, res) => {
+    const { userid, question } = req.body;
+
+    try {
+        const conversation_id = await createConversation(userid, question);
+        await createMessage(conversation_id, "user", question);
+
+        const response = await aloeVeraBot(question);
+        await createMessage(conversation_id, "bot", response);
+
+        res.status(200).json({ message: response });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'An error occurred while processing your request.' });
+    }
+});
+
+app.get('/chat/usermode/getConversation',async(req,res)=>{
+    const {conversation_id} = req.body;
+    const {data, error}= await supabase
+    .from('messages')
+    .select()
+    .eq('conversation_id', conversation_id);
+
+    if (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'An error occurred while fetching the conversation.' });
+    }
+
+    res.status(200).json({ messages: data });
+})
+
+app.post('/chat/usermode/sendMessage', async (req, res) => {
+    const { conversation_id, question } = req.body;
+
+    try {
+        await createMessage(conversation_id, "user", question);
+
+        const response = await aloeVeraBot(question);
+        await createMessage(conversation_id, "bot", response);
+        res.status(200).json({ message: response });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'An error occurred while sending the message.' });
+    }
+});
+
+app.put('/changeusername', async(req,res)=>{
+    const {userid, username} = req.body;
+
+    const {error} = await supabase
+    .from('profiles')
+    .update({ username })
+    .eq('userid', userid);
+
+    if (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'An error occurred while updating the username.' });
+    }
+
+    res.status(200).json({ message: 'Username updated successfully.' });
+})
+app.delete('/delete/conversation', async (req,res)=>{
+   const {conversation_id} = req.body;
+
+   const {error} = await supabase
+   .from('conversations')
+   .delete()
+   .eq('id', conversation_id);
+
+   if (error) {
+       console.error(error);
+       return res.status(500).json({ error: 'An error occurred while deleting the conversation.' });
+   }
+
+   res.status(200).json({ message: 'Conversation deleted successfully.' });
+})
+
+app.delete('/delete/all/conversations', async (req,res)=>{
+   const {userid} = req.body;
+
+   const {error} = await supabase
+   .from('conversations')
+   .delete()
+   .eq('user_id', userid);
+
+   if (error) {
+       console.error(error);
+       return res.status(500).json({ error: 'An error occurred while deleting all conversations.' });
+   }
+
+   res.status(200).json({ message: 'All conversations deleted successfully.' });
+})
+
+app.post('/delete-account', async (req, res) => {
+  const { user_id } = req.body
+
+  const { error } = await supabase.auth.admin.deleteUser(user_id)
+
+  if (error) return res.status(400).json({ error: error.message })
+
+    await supabase.from('profiles').delete().eq('userid', user_id)
+  res.json({ success: true })
 })
 
 app.listen(PORT, () => {

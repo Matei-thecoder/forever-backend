@@ -1,0 +1,2 @@
+Add token security and eventually modify routes.
+Solve the delete account bug
