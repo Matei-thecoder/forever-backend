@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import OpenAI from "openai";
 import { createClient } from '@supabase/supabase-js'
+import cookieParser from 'cookie-parser';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
@@ -11,13 +12,14 @@ import cors from "cors"
 import bcrypt from "bcrypt"
 
 const app = express()
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 5000
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Middleware
 app.use(cors())
 app.use(express.json())
+app.use(cookieParser());
 
 let productsCache = [];
 
@@ -57,13 +59,13 @@ async function aloeVeraBot(userMessage){
     return response.choices[0].message.content;
 }
 
-async function createConversation(userid, question)
+async function createConversation(userid)
 {
     const {data, error} = await supabase
     .from('conversations')
     .insert({
         user_id:userid,
-        title: question
+        title: "No title"
     })
     .select();
     if(error) 
@@ -100,48 +102,59 @@ app.post('/signup', async (req, res) => {
     const { email, password, username } = req.body;
 
     if (!email || !password || !username) {
-        return res.status(400).json({ error: 'Email, username and password are required' });
+        res.status(400).json({ "message": 'Email, username and password are required' });
     }
     console.log("Raw body:", req.body)
      //const hashedPassword = await bcrypt.hash(password, 10);
-
-    const { data, signUpError } = await supabase.auth.signUp({
+    
+    const { data:data, error: signUpError } = await supabase.auth.signUp({
         email,
         password
     });
 
     if (signUpError) {
-        return res.status(500).json({ error: signUpError.message });
+        console.log(signUpError);
+        res.json({"message":signUpError});
+        return;
     }
-
-    const user = data.user;
-    console.log(user.id);
-    const {data:profileData, error:insertError} = await supabase
-    .from('profiles')
-    .insert({
-        userid:user.id,
-        username:username,
-        email:email,
-        tier:"base"
-
-    })
-    if (insertError) {
-      return res.status(400).json({ error: insertError.message })
+    if(data.user == null){
+        console.log("Email already exists");
+        res.json({"message":"The email is already used, "});
     }
+    
+    //console.log(signUpError);
+    console.log(data);
+    try{
+        const user = data.user;
+        //console.log(user.id);
+        const {data:profileData, error:insertError} = await supabase
+        .from('profiles')
+        .insert({
+            userid:user.id,
+            username:username,
+            email:email,
+            tier:"base"
+
+        })
+        if (insertError) {
+            res.json({"message":"An error has occured. Please try again."});
+        }
 
 
 
-     return res.status(201).json({
-      message: "User signed up successfully",
-      user: { id: user.id, email: user.email, username, tier:"base" }
-    })
+        res.json({"message":"success"});
+    }catch(e){
+        console.log(e);
+        res.json({"message":"An error has occured, please try again."});
+    }
+    
 });
 
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password are required' });
+        return res.status(400).json({ "message": 'Email and password are required' });
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -150,18 +163,30 @@ app.post('/login', async (req, res) => {
     });
 
     if (error) {
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ "message": error.message });
     }
-    const user  = data.user;
+   //const user  = data.user;
 
     const {data:getData, error: getError} = await supabase
     .from('profiles')
     .select()
 
     if (getError) {
-        return res.status(500).json({ error: getError.message });
+        return res.status(500).json({ "message": getError.message });
     }
-    console.log(getData);
+    const { session, user } = data;
+
+  // Store access_token in HTTP-only cookie
+    res.cookie("userid", user.id);
+
+    res.json({"message":"success",
+        "user": {
+            "userid":user.id,
+            "username": getData[0].username,
+            "tier": getData[0].tier
+        }
+    });
+    /*console.log(getData);
     res.status(200).json({ 
         message: "Logged in successfully",
         user: {
@@ -170,7 +195,7 @@ app.post('/login', async (req, res) => {
             username: getData[0].username,
             tier: getData[0].tier
         }
-    });
+    });*/
 });
 
 app.post('/chat/guestmode',async (req,res)=>{
@@ -185,14 +210,14 @@ app.post('/chat/guestmode',async (req,res)=>{
     });
 })
 
-app.get('/chat/usermode/getAllConversations', async (req,res)=>{
-    const {userid} = req.body;
+app.post('/chat/usermode/getAllConversations', async (req,res)=>{
+    const userid = req.body.userid;
 
     const {data, error} = await supabase
     .from('conversations')
     .select()
     .eq('user_id', userid);
-
+    console.log(data);
     if (error) {
         console.error(error);
         return res.status(500).json({ error: 'An error occurred while fetching conversations.' });
@@ -202,24 +227,21 @@ app.get('/chat/usermode/getAllConversations', async (req,res)=>{
 })
 
 app.post('/chat/usermode/startConvo', async (req, res) => {
-    const { userid, question } = req.body;
+    const { userid} = req.body;
 
     try {
-        const conversation_id = await createConversation(userid, question);
-        await createMessage(conversation_id, "user", question);
-
-        const response = await aloeVeraBot(question);
-        await createMessage(conversation_id, "bot", response);
-
-        res.status(200).json({ message: response });
+        const conversation_id = await createConversation(userid);
+        
+        res.status(200).json({"message":"success", "conversationid": conversation_id });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'An error occurred while processing your request.' });
+        res.status(500).json({ "message": 'An error occurred while processing your request.' });
     }
 });
 
-app.get('/chat/usermode/getConversation',async(req,res)=>{
+app.post('/chat/usermode/getConversation',async(req,res)=>{
     const {conversation_id} = req.body;
+    console.log(conversation_id)
     const {data, error}= await supabase
     .from('messages')
     .select()
@@ -229,7 +251,7 @@ app.get('/chat/usermode/getConversation',async(req,res)=>{
         console.error(error);
         return res.status(500).json({ error: 'An error occurred while fetching the conversation.' });
     }
-
+    console.log(data);
     res.status(200).json({ messages: data });
 })
 
@@ -237,6 +259,22 @@ app.post('/chat/usermode/sendMessage', async (req, res) => {
     const { conversation_id, question } = req.body;
 
     try {
+        const {data, error}= await supabase
+        .from('conversations')
+        .select()
+        .eq('id', conversation_id);
+        if(error) res.send({"message":error});
+
+        if(data[0].title=="No title")
+        {
+            const { error } = await supabase
+            .from('conversations')
+            .update({ title: question })
+            .eq('id', conversation_id)
+            if(error) res.send({"message":error});
+        }
+           
+
         await createMessage(conversation_id, "user", question);
 
         const response = await aloeVeraBot(question);
