@@ -311,10 +311,10 @@ app.delete('/delete/conversation', async (req,res)=>{
 
    if (error) {
        console.error(error);
-       return res.status(500).json({ error: 'An error occurred while deleting the conversation.' });
+       return res.status(500).json({ "message": 'An error occurred while deleting the conversation.' });
    }
 
-   res.status(200).json({ message: 'Conversation deleted successfully.' });
+   res.status(200).json({ "message": 'success' });
 })
 
 app.delete('/delete/all/conversations', async (req,res)=>{
@@ -327,10 +327,10 @@ app.delete('/delete/all/conversations', async (req,res)=>{
 
    if (error) {
        console.error(error);
-       return res.status(500).json({ error: 'An error occurred while deleting all conversations.' });
+       return res.status(500).json({ "message": 'An error occurred while deleting all conversations.' });
    }
 
-   res.status(200).json({ message: 'All conversations deleted successfully.' });
+   res.status(200).json({ "message": 'success' });
 })
 
 app.post('/delete-account', async (req, res) => {
