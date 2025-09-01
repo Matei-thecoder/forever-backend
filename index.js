@@ -170,6 +170,7 @@ app.post('/login', async (req, res) => {
     const {data:getData, error: getError} = await supabase
     .from('profiles')
     .select()
+    .eq("email", email);
 
     if (getError) {
         return res.status(500).json({ "message": getError.message });
