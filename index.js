@@ -184,7 +184,8 @@ app.post('/login', async (req, res) => {
         "user": {
             "userid":user.id,
             "username": getData[0].username,
-            "tier": getData[0].tier
+            "tier": getData[0].tier,
+            "email":email
         }
     });
     /*console.log(getData);
