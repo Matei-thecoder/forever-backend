@@ -298,10 +298,10 @@ app.put('/changeusername', async(req,res)=>{
 
     if (error) {
         console.error(error);
-        return res.status(500).json({ error: 'An error occurred while updating the username.' });
+        return res.status(500).json({ "message": 'An error occurred while updating the username.' });
     }
 
-    res.status(200).json({ message: 'Username updated successfully.' });
+    res.status(200).json({ "message": 'success' });
 })
 app.delete('/delete/conversation', async (req,res)=>{
    const {conversation_id} = req.body;
