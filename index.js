@@ -367,10 +367,10 @@ app.post('/delete-account', async (req, res) => {
 
   const { error } = await supabase.auth.admin.deleteUser(user_id)
 
-  if (error) return res.status(400).json({ error: error.message })
+  if (error) return res.status(400).json({ "message": error.message })
 
     await supabase.from('profiles').delete().eq('userid', user_id)
-  res.json({ success: true })
+  res.json({ "message": 'success' })
 })
 
 app.listen(PORT, () => {
