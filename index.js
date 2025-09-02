@@ -303,6 +303,33 @@ app.put('/changeusername', async(req,res)=>{
 
     res.status(200).json({ "message": 'success' });
 })
+
+app.put('/changepassword', async(req,res)=>{
+
+    const {email,oldpassword,newpassword} = req.body;
+
+    const {data, error} = await supabase.auth.signInWithPassword({
+        email,
+        password: oldpassword
+    });
+
+    if (error) {
+        console.error(error);
+        return res.status(401).json({ "message": 'Invalid credentials.' });
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({
+        password: newpassword
+    });
+
+    if (updateError) {
+        console.error(updateError);
+        return res.status(500).json({ "message": 'An error occurred while updating the password.' });
+    }
+
+    res.status(200).json({ "message": 'success' });
+})
+
 app.delete('/delete/conversation', async (req,res)=>{
    const {conversation_id} = req.body;
 
