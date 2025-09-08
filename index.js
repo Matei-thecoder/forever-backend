@@ -487,6 +487,7 @@ app.post('/createlink',async (req,res)=>{
             .from('invitelinks')
             .delete()
             .eq("id",search[0].id)
+            console.log(search);
             if(deleteError)
             {
                 console.log(searchError)
