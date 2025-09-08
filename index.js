@@ -201,39 +201,52 @@ app.post('/signup/link', async (req, res) => {
             res.json({"message":"An error has occured. Please try again."});
         }
         console.log(linkData);
-        const {data:invitedFriends, error: invitedFriendsError} = await supabase
+        const { data: invitedFriends, error: invitedFriendsError } = await supabase
         .from("profiles")
         .select()
-        .eq("userid",linkData[0].user_id)
+        .eq("userid", linkData[0].user_id);
 
-        if(invitedFriendsError){
-            console.log(invitedFriendsError);
-            res.json({"message":"An error has occured. Please try again."});
+        if (invitedFriendsError) {
+        console.log(invitedFriendsError);
+        return res.json({ message: "An error has occurred. Please try again." });
         }
-        let nrInvitedFriends = invitedFriends[0].invited_friends;
+
+        if (!invitedFriends || invitedFriends.length === 0) {
+        return res.json({ message: "User not found." });
+        }
+
+        // Increment invited friends
+        let nrInvitedFriends = invitedFriends[0].invited_friends ?? 0;
         nrInvitedFriends++;
-        let tier = invitedFriends[0].tier;
-        if(invitedFriends>=5 && invitedFriends<10)
-            tier = "tier 1";
-        else if(invitedFriends>=10 && invitedFriends<15)
-            tier = "tier 2";
-        else if(invitedFriends>=15)
-            tier = "tier 3";
-        const {data:updateD, error:updateDError} = await supabase
+
+        // Determine tier based on number of invited friends
+        let tier = invitedFriends[0].tier ?? "tier 0";
+
+        if (nrInvitedFriends >= 5 && nrInvitedFriends < 10) {
+        tier = "tier 1";
+        } else if (nrInvitedFriends >= 10 && nrInvitedFriends < 15) {
+        tier = "tier 2";
+        } else if (nrInvitedFriends >= 15) {
+        tier = "tier 3";
+        }
+
+        // Update profile
+        const { data: updateD, error: updateDError } = await supabase
         .from("profiles")
         .update({
-            tier:tier,
-            invited_friends:nrInvitedFriends
-
+            tier: tier,
+            invited_friends: nrInvitedFriends
         })
-        .eq("userid",linkData[0].user_id);
+        .eq("userid", linkData[0].user_id);
 
-        if(updateDError)
-        {
-            console.log(updateDError);
-            res.json({"message":"An error has occured. Please try again."});
-
+        if (updateDError) {
+        console.log(updateDError);
+        return res.json({ message: "An error has occurred. Please try again." });
         }
+
+        // Success response
+        res.json({ message: "Profile updated successfully.", tier, invited_friends: nrInvitedFriends });
+
         
 
 
