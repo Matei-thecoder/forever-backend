@@ -200,7 +200,7 @@ app.post('/signup/link', async (req, res) => {
             console.log(linkDataError);
             res.json({"message":"An error has occured. Please try again."});
         }
-
+        console.log(linkData);
         const {data:invitedFriends, error: invitedFriendsError} = await supabase
         .from("profiles")
         .select()
