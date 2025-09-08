@@ -149,6 +149,103 @@ app.post('/signup', async (req, res) => {
     }
     
 });
+app.post('/signup/link', async (req, res) => {
+    const { email, password, username, link } = req.body;
+
+    if (!email || !password || !username || !link) {
+        res.status(400).json({ "message": 'Email, username and password are required' });
+    }
+    console.log("Raw body:", req.body)
+     //const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const { data:data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password
+    });
+
+    if (signUpError) {
+        console.log(signUpError);
+        res.json({"message":signUpError});
+        return;
+    }
+    if(data.user == null){
+        console.log("Email already exists");
+        res.json({"message":"The email is already used, "});
+    }
+    
+    //console.log(signUpError);
+    console.log(data);
+    try{
+        const user = data.user;
+        //console.log(user.id);
+        const {data:profileData, error:insertError} = await supabase
+        .from('profiles')
+        .insert({
+            userid:user.id,
+            username:username,
+            email:email,
+            tier:"base"
+
+        })
+        if (insertError) {
+            console.log(insertError);
+            res.json({"message":"An error has occured. Please try again."});
+        }
+        const {data:linkData, error:linkDataError} = await supabase
+        .from('invitelinks')
+        .select()
+        .eq("link",link)
+
+        if(linkDataError){
+            console.log(linkDataError);
+            res.json({"message":"An error has occured. Please try again."});
+        }
+
+        const {data:invitedFriends, error: invitedFriendsError} = await supabase
+        .from("profiles")
+        .select()
+        .eq("userid",linkData[0].user_id)
+
+        if(invitedFriendsError){
+            console.log(invitedFriendsError);
+            res.json({"message":"An error has occured. Please try again."});
+        }
+        let nrInvitedFriends = invitedFriends[0].invited_friends;
+        nrInvitedFriends++;
+        let tier = invitedFriends[0].tier;
+        if(invitedFriends>=5 && invitedFriends<10)
+            tier = "tier 1";
+        else if(invitedFriends>=10 && invitedFriends<15)
+            tier = "tier 2";
+        else if(invitedFriends>=15)
+            tier = "tier 3";
+        const {data:updateD, error:updateDError} = await supabase
+        .from("profiles")
+        .update({
+            tier:tier,
+            invited_friends:nrInvitedFriends
+
+        })
+        .eq("userid",linkData[0].user_id);
+
+        if(updateDError)
+        {
+            console.log(updateDError);
+            res.json({"message":"An error has occured. Please try again."});
+
+        }
+        
+
+
+
+        res.json({"message":"success"});
+    }catch(e){
+        console.log(e);
+        res.json({"message":"An error has occured, please try again."});
+    }
+    
+});
+
 
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
