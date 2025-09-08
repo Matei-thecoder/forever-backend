@@ -295,6 +295,7 @@ app.post('/login', async (req, res) => {
             "userid":user.id,
             "username": getData[0].username,
             "tier": getData[0].tier,
+            "invited_friends":getData[0].invited_friends,
             "email":email
         }
     });
