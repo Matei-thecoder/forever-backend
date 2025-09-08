@@ -483,17 +483,21 @@ app.post('/createlink',async (req,res)=>{
                 res.send({"message":"An error has occured."});
                 return;
             }
-            const {data:deleteL , error:deleteError} = await supabase
-            .from('invitelinks')
-            .delete()
-            .eq("id",search[0].id)
-            console.log(search);
-            if(deleteError)
+            if(search[0])
             {
-                console.log(searchError)
-                res.send({"message":"An error has occured."});
-                return;
+                const {data:deleteL , error:deleteError} = await supabase
+                    .from('invitelinks')
+                    .delete()
+                    .eq("id",search[0].id)
+                    console.log(search);
+                    if(deleteError)
+                    {
+                        console.log(searchError)
+                        res.send({"message":"An error has occured."});
+                        return;
+                    }
             }
+            
 
             
 
