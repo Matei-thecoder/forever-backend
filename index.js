@@ -376,6 +376,29 @@ app.post('/delete-account', async (req, res) => {
 app.post('/createlink',async (req,res)=>{
     const {userid, link} = req.body;
     try{
+            const {data:search, error:searchError} = await supabase
+            .from('invitelinks')
+            .select()
+            .eq("user_id",userid);
+            if(searchError)
+            {
+                console.log(searchError)
+                res.send({"message":"An error has occured."});
+                return;
+            }
+            const {data:deleteL , error:deleteError} = await supabase
+            .from('invitelinks')
+            .delete()
+            .eq("id",search[0].id)
+            if(deleteError)
+            {
+                console.log(searchError)
+                res.send({"message":"An error has occured."});
+                return;
+            }
+
+            
+
             const {data, error} = await supabase
             .from('invitelinks')
             .insert({
