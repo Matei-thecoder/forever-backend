@@ -217,6 +217,7 @@ app.post('/signup/link', async (req, res) => {
 
         // Increment invited friends
         let nrInvitedFriends = invitedFriends[0].invited_friends ?? 0;
+        console.log(invitedFriends);
         nrInvitedFriends++;
 
         // Determine tier based on number of invited friends
@@ -245,8 +246,7 @@ app.post('/signup/link', async (req, res) => {
         }
 
         // Success response
-        res.json({ message: "Profile updated successfully.", tier, invited_friends: nrInvitedFriends });
-
+        
         
 
 
