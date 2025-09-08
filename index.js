@@ -373,6 +373,31 @@ app.post('/delete-account', async (req, res) => {
   res.json({ "message": 'success' })
 })
 
+app.post('/createlink',async (req,res)=>{
+    const {userid, link} = req.body;
+    try{
+            const {data, error} = await supabase
+            .from('invitelinks')
+            .insert({
+                user_id:userid,
+                link:link
+            })
+            if(error)
+            {
+                console.log(error);
+                res.send({"message":"An error has intervened, please contact support"});
+            }
+            else
+            {
+                res.send({"message":"success"});
+            }
+    }catch(e)
+    {
+        console.log(e);
+        res.send({"message":"An error has intervened, please contact support"});
+    }
+})
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
 })
