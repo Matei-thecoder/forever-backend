@@ -24,7 +24,7 @@ app.use(cookieParser());
 let productsCache = [];
 
 async function loadProducts() {
-  const { data } = await supabase.from('products').select('*');
+  const { data } = await supabase.from('products2').select('*');
   productsCache = data;
 }
 
