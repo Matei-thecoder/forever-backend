@@ -536,6 +536,33 @@ app.post('/createlink',async (req,res)=>{
         res.send({"message":"An error has intervened, please contact support"});
     }
 })
+app.post('/getuserdata', async (req,res)=>{
+    const userid = req.body.userid;
+    try{
+        const {data,error} = await supabase
+        .from('profiles')
+        .select()
+        .eq("userid",userid)
+        if(error)
+        {
+            console.log(error);
+            res.send({"message":"error"})
+
+        }
+        res.send({
+            "message":"succes",
+            "data":{
+                "username":data[0].username,
+                "email":data[0].email,
+                "tier":data[0].tier,
+                "invited_friends":data[0].invited_friends
+            }
+        });
+    }catch(e){
+        console.log(e);
+        res.send({"message":"error"});
+    }
+})
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
