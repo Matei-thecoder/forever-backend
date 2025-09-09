@@ -537,7 +537,8 @@ app.post('/createlink',async (req,res)=>{
     }
 })
 app.post('/getuserdata', async (req,res)=>{
-    const userid = req.body.userid;
+    console.log(req.body);
+    const {userid} = req.body;
     try{
         const {data,error} = await supabase
         .from('profiles')
