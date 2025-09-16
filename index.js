@@ -55,31 +55,31 @@ await loadProductsTier1();
 await loadProductsTier2();
 await loadProductsTier3();*/
 
-setInterval(loadProducts, 10 * 60 * 1000);
+setInterval(loadAllProducts, 10 * 60 * 1000);
 
 
 async function aloeVeraBot(userMessage,tier){
     let products;
     if(tier==="base")
     {
-        await loadProducts();
+        console.log("Loading base products");
+        
         products = productsCache;
     }
     else if(tier==="tier 1")
        
     {
-         await loadProductsTier1();
+         
         products = productsCacheTier1;
     }
     else if(tier==="tier 2")
     {
-        await loadProductsTier2();
+        
         products = productsCacheTier2;
     }
     else if(tier==="tier 3")
     {
-        await loadProductsTier3();
-
+        
         products = productsCacheTier3;
     }
 
