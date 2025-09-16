@@ -22,20 +22,54 @@ app.use(express.json())
 app.use(cookieParser());
 
 let productsCache = [];
+let productsCacheTier1 = [];
+let productsCacheTier2 = [];
+let productsCacheTier3 = [];
 
 async function loadProducts() {
   const { data } = await supabase.from('products2').select('*');
   productsCache = data;
 }
-
+async function loadProductsTier1() {
+    const { data } = await supabase.from('products_tier1').select('*');
+    productsCacheTier1 = data;
+  }
+  async function loadProductsTier2() {
+    const { data } = await supabase.from('products_tier2').select('*');
+    productsCacheTier1 = data;
+  }
+  async function loadProductsTier3() {
+    const { data } = await supabase.from('products_tier3').select('*');
+    productsCacheTier1 = data;
+  }
 // Load initially
 await loadProducts();
+await loadProductsTier1();
+await loadProductsTier2();
+await loadProductsTier3();
 
 setInterval(loadProducts, 10 * 60 * 1000);
 
 
-async function aloeVeraBot(userMessage){
-    const products = productsCache;
+async function aloeVeraBot(userMessage,tier){
+    let products;
+    if(tier=="base")
+    {
+        
+        products = productsCache;
+    }
+    else if(tier=="tier 1")
+    {
+        products = productsCacheTier1;
+    }
+    else if(tier=="tier 2")
+    {
+        products = productsCacheTier2;
+    }
+    else if(tier=="tier 3")
+    {
+        products = productsCacheTier3;
+    }
 
     if(!products || products.length === 0)
     {
@@ -314,7 +348,7 @@ app.post('/login', async (req, res) => {
 app.post('/chat/guestmode',async (req,res)=>{
     const question = req.body.question;
 
-    aloeVeraBot(question).then(response => {
+    aloeVeraBot(question,"base").then(response => {
         console.log(response);
         res.status(200).json({ message: response });
     }).catch(error => {
@@ -369,8 +403,8 @@ app.post('/chat/usermode/getConversation',async(req,res)=>{
 })
 
 app.post('/chat/usermode/sendMessage', async (req, res) => {
-    const { conversation_id, question } = req.body;
-
+    const { tier,conversation_id, question } = req.body;
+    console.log(tier, conversation_id, question);
     try {
         const {data, error}= await supabase
         .from('conversations')
@@ -390,7 +424,7 @@ app.post('/chat/usermode/sendMessage', async (req, res) => {
 
         await createMessage(conversation_id, "user", question);
 
-        const response = await aloeVeraBot(question);
+        const response = await aloeVeraBot(question,tier);
         await createMessage(conversation_id, "bot", response);
         res.status(200).json({ message: response });
     } catch (error) {
