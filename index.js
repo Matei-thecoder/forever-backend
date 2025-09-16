@@ -55,7 +55,7 @@ async function aloeVeraBot(userMessage,tier){
     let products;
     if(tier=="base")
     {
-        
+        await loadProducts();
         products = productsCache;
     }
     else if(tier==="tier 1")
